@@ -1,8 +1,48 @@
+import prisma from '@/lib/client'
+import { fetchUser } from '@/lib/data'
+import { auth } from '@clerk/nextjs/server'
+import { User } from '@prisma/client'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 
-const UserInfoCard = ({ userId }: { userId?: string }) => {
+const UserInfoCard = async ({ user }: { user?: User }) => {
+
+  let isUserBlocked = false;
+  let isFollowing = false;
+  let isFollowingRequestSent = false;
+
+  const {userId : currentUser} = auth();
+
+  if(currentUser) {
+    const res1 = await prisma.block.findFirst({
+      where : {
+        BlockerId : user?.id,
+        BlockedId : currentUser!
+      }
+    })
+    if(res1) isUserBlocked = true;
+    
+    const res2 = await prisma.follower.findFirst({
+      where : {
+        followingId : user?.id,
+        followerId : currentUser!
+      }
+    })
+    if(res2) isUserBlocked = true;
+    
+    
+    
+    const res3 = await prisma.followRequest.findFirst({
+      where : {
+        RecieverId : user?.id,
+        SenderId : currentUser!
+      }
+    })
+    if(res3) isUserBlocked = true;
+    
+  }
+
   return (
     <div className='p-4 bg-white rounded-lg text-sm shadow-md flex flex-col gap-4'>
       {/* Top  */}
@@ -13,35 +53,56 @@ const UserInfoCard = ({ userId }: { userId?: string }) => {
 
       {/* Bottom  */}
       <div className='flex flex-col gap-4 text-gray-500'>
-        <div className='flex items-center gap-2'>
-          <span className='text-xl text-black font-semibold'>Vasu Choudhari</span>
-          <span className='text-sm'>Vasu_1204</span>
+        <div className='flex flex-col gap-2'>
+          <span className='text-xl text-black font-semibold'>{user?.name ? user.name + " " + user.surname : user?.username}</span>
+
+          <span className='text-sm'>{user?.id}</span>
         </div>
 
-        <p>
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Excepturi non amet sequi, mollitia officiis labore? Voluptatum obcaecati dolorum hic dolores!
+        {user?.description && (
+          <p>
+          {user.description}
         </p>
-        <div className='items-center flex gap-2'>
+        )}
+        {
+          user?.city && (
+            <div className='items-center flex gap-2'>
           <Image height={16} width={16} src={'/map.png'} alt='img' />
-          <span>Living in <b>Gondia</b></span>
+          <span>Living in <b>{user?.city}</b></span>
         </div>
-        <div className='items-center flex gap-2'>
+          )
+        }
+        {
+          user?.school && (
+            <div className='items-center flex gap-2'>
           <Image height={16} width={16} src={'/school.png'} alt='img' />
-          <span>Went to <b>GPS</b></span>
+          <span>Went to <b>{user?.school}</b></span>
         </div>
-        <div className='items-center flex gap-2'>
+          )
+        }
+
+        {
+          user?.work && (
+<div className='items-center flex gap-2'>
           <Image height={16} width={16} src={'/work.png'} alt='img' />
-          <span>Works at <b>Google inc.</b></span>
+          <span>Works at <b>{user?.work}</b></span>
         </div>
+          )
+        }
+        
         <div className='flex items-center justify-between'>
-          <div className='flex gap-1 items-center'>
-            <Image height={16} width={16} src={'/link.png'} alt='img' />
-            <Link className='text-blue-500 font-medium' href={'https://google.com'}>vasu.com</Link>
-          </div>
+          {
+            user?.website && (
+              <div className='flex gap-1 items-center'>
+                <Image height={16} width={16} src={'/link.png'} alt='img' />
+                <Link className='text-blue-500 font-medium' href={user?.website}>{user?.website}</Link>
+              </div>
+            )
+          }
 
           <div className='flex gap-1 items-center'>
             <Image height={16} width={16} src={'/date.png'} alt='img' />
-            <span>Joined 12 April, 2005</span>
+            <span>Joined {(new Date(user?.createdAt!)).toLocaleDateString()}</span>
           </div>
 
         </div>
