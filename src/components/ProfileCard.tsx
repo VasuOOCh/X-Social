@@ -24,7 +24,7 @@ const ProfileCard = async () => {
             </div>
 
             <div className='h-20 flex flex-col gap-2 items-center'>
-                <span className='font-semibold'> {user.name ? user.name + " " + user.surname : user.username}  </span>
+                <span className='font-semibold'>  </span>
                 <div className='flex items-center gap-4'>
                     <div className='flex'>
                     <Image alt='profile' src={'https://images.pexels.com/photos/7773738/pexels-photo-7773738.jpeg?auto=compress&cs=tinysrgb&w=600'} width={12} height={12} className='object-cover ring-1 ring-white z-10 rounded-full w-3 h-3' />

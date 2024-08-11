@@ -3,14 +3,19 @@ import { updateProfile } from '@/lib/actions';
 import { User } from '@prisma/client'
 import { CldUploadWidget } from 'next-cloudinary';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import React, { useActionState, useState } from 'react'
+import { useFormStatus } from 'react-dom';
 
 const UpdateUser = ({ user }: { user: User }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [coverImg, setCoverImg] = useState<any>(null);
+  const router = useRouter();
   const handleClose = () => {
-    setIsOpen(false)
+    setIsOpen(false);
+    // router.refresh();
   }
+  const {pending} = useFormStatus();
 
   const [state, updateUser] = useActionState(updateProfile.bind(null, coverImg?.secure_url), null)
 
@@ -84,7 +89,11 @@ const UpdateUser = ({ user }: { user: User }) => {
                 </div>
 
               </div>
-              <button className='bg-blue-500 rounded-md  p-2 text-white mt-2'>Update</button>
+              <button type='submit' disabled={pending} className='bg-blue-500 rounded-md  p-2 text-white mt-2'>
+                {
+                  pending ? "Updating" : "Update"
+                }
+              </button>
 
               <div className='absolute top-2 right-2 cursor-pointer text-lg' onClick={handleClose}>X</div>
                 {

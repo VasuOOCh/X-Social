@@ -2,9 +2,8 @@
 
 import { auth } from "@clerk/nextjs/server";
 import prisma from "./client";
-import { revalidatePath } from "next/cache";
-import { error } from "console";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 
 export const addPost = async (formData: FormData) => {
@@ -107,7 +106,7 @@ export const toggleBlock = async (userId: string) => {
             }
         })
         // console.log(existingUserBlocked);
-        
+
         if (existingUserBlocked) {
             await prisma.block.delete({
                 where: {
@@ -127,7 +126,7 @@ export const toggleBlock = async (userId: string) => {
             })
 
             return {
-                blocked : true
+                blocked: true
             }
         }
 
@@ -136,7 +135,7 @@ export const toggleBlock = async (userId: string) => {
     }
 }
 
-export const acceptRequest = async (userId : string) => {
+export const acceptRequest = async (userId: string) => {
     try {
 
         const { userId: currentUser } = auth();
@@ -146,34 +145,34 @@ export const acceptRequest = async (userId : string) => {
         }
 
         const followRequest = await prisma.followRequest.findFirst({
-            where : {
-                SenderId : userId,
-                RecieverId : currentUser
+            where: {
+                SenderId: userId,
+                RecieverId: currentUser
             }
         })
 
-        if(followRequest) {
+        if (followRequest) {
             await prisma.followRequest.delete({
-                where : {
-                    id : followRequest?.id
+                where: {
+                    id: followRequest?.id
                 }
             })
 
             await prisma.follower.create({
-                data : {
-                    followingId : currentUser,
-                    followerId : userId
+                data: {
+                    followingId: currentUser,
+                    followerId: userId
                 }
             })
         }
     } catch (error) {
         console.log(error);
         throw new Error("Something went wrong")
-        
+
     }
 }
 
-export const declineRequest = async (userId : string) => {
+export const declineRequest = async (userId: string) => {
     try {
 
         const { userId: currentUser } = auth();
@@ -183,78 +182,146 @@ export const declineRequest = async (userId : string) => {
         }
 
         const followRequest = await prisma.followRequest.findFirst({
-            where : {
-                SenderId : userId,
-                RecieverId : currentUser
+            where: {
+                SenderId: userId,
+                RecieverId: currentUser
             }
         })
 
-        if(followRequest) {
+        if (followRequest) {
             await prisma.followRequest.delete({
-                where : {
-                    id : followRequest?.id
+                where: {
+                    id: followRequest?.id
                 }
             })
         }
     } catch (error) {
         console.log(error);
         throw new Error("Something went wrong")
-        
+
     }
 }
 
-export const updateProfile = async (cover : string, currentState : any,formData : FormData) => {
-    
-    try {
-        const {userId} = auth();
+export const updateProfile = async (cover: string, currentState: any, formData: FormData) => {
 
-        if(!userId){
+    try {
+        const { userId } = auth();
+
+        if (!userId) {
             throw new Error("No user found")
         }
 
         const formInfo = Object.fromEntries(formData);
-        
+
         const filterdFields = Object.fromEntries(
-            Object.entries(formInfo).filter(([key,val]) => val != '')
+            Object.entries(formInfo).filter(([key, val]) => val != '')
         )
-        
+
 
         const Profile = z.object({
-            cover : z.string().optional(),
-            name : z.string().max(60).optional(),
-            surname : z.string().max(60).optional(),
-            description : z.string().max(300).optional(),
-            city : z.string().max(60).optional(),
-            school : z.string().max(60).optional(),
-            work : z.string().max(60).optional(),
-            website : z.string().max(60).optional(),
+            cover: z.string().optional(),
+            name: z.string().max(60).optional(),
+            surname: z.string().max(60).optional(),
+            description: z.string().max(300).optional(),
+            city: z.string().max(60).optional(),
+            school: z.string().max(60).optional(),
+            work: z.string().max(60).optional(),
+            website: z.string().max(60).optional(),
         })
 
-        const validatedFields = Profile.safeParse({...filterdFields, cover});
+        const validatedFields = Profile.safeParse({ ...filterdFields, cover });
 
-        if(!validatedFields.success) {
+        if (!validatedFields.success) {
             console.log(Object.entries(validatedFields.error.flatten().fieldErrors));
             return {
-                success : "",
-                errors : Object.entries(validatedFields.error.flatten().fieldErrors)
+                success: "",
+                errors: Object.entries(validatedFields.error.flatten().fieldErrors)
             }
         }
 
-        
+
 
         await prisma.user.update({
-            where : {
-                id : userId
+            where: {
+                id: userId
             },
-            data : validatedFields.data
+            data: validatedFields.data
         })
 
+        revalidatePath('/profile/' + userId)
+
         return {
-            success : "User information has been updated",
-            errors : []
+            success: "User information has been updated",
+            errors: []
         }
-        
+
     } catch (error) {
+
+    }
+}
+
+export const toggleLike = async (postId: string) => {
+    try {
+        const { userId } = auth();
+
+        if (!userId) {
+            throw new Error("No user found")
+        }
+
+        const likedPost = await prisma.like.findFirst({
+            where: {
+                postId,
+                userId
+            }
+        })
+        console.log(likedPost);
+        if (likedPost) {
+            await prisma.like.delete({
+                where: {
+                    id: likedPost.id
+                }
+            })
+            
+        } else {
+            await prisma.like.create({
+                data: {
+                    postId,
+                    userId
+                }
+            })
+        }
+
+
+    } catch (error) {
+        console.log(error);
+        throw new Error("Error in toggling the like")
+    }
+}
+
+export const addComment = async ( postId : string, desc : string) => {
+    try {
+        const { userId } = auth();    
         
+
+        if (!userId) {
+            throw new Error("No user found")
+        }
+
+        const newComment = await prisma.comment.create({
+            data : {
+                userId,
+                desc,
+                postId
+            },
+            include : {
+                user : true
+            }
+        })
+        console.log(newComment);
+        
+
+        return newComment;
+    } catch (error) {
+        console.log(error);
     }
 }
