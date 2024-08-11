@@ -5,6 +5,8 @@ import { User } from '@prisma/client'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
+import UserInfoCardInteraction from './UserInfoCardInteraction'
+import UpdateUser from './UpdateUser'
 
 const UserInfoCard = async ({ user }: { user?: User }) => {
 
@@ -12,13 +14,17 @@ const UserInfoCard = async ({ user }: { user?: User }) => {
   let isFollowing = false;
   let isFollowingRequestSent = false;
 
+  if(!user) {
+    return null;
+  }
+
   const {userId : currentUser} = auth();
 
   if(currentUser) {
     const res1 = await prisma.block.findFirst({
       where : {
-        BlockerId : user?.id,
-        BlockedId : currentUser!
+        BlockerId : currentUser!,
+        BlockedId : user?.id
       }
     })
     if(res1) isUserBlocked = true;
@@ -29,7 +35,7 @@ const UserInfoCard = async ({ user }: { user?: User }) => {
         followerId : currentUser!
       }
     })
-    if(res2) isUserBlocked = true;
+    if(res2) isFollowing = true;
     
     
     
@@ -39,7 +45,7 @@ const UserInfoCard = async ({ user }: { user?: User }) => {
         SenderId : currentUser!
       }
     })
-    if(res3) isUserBlocked = true;
+    if(res3) isFollowingRequestSent = true;
     
   }
 
@@ -48,7 +54,13 @@ const UserInfoCard = async ({ user }: { user?: User }) => {
       {/* Top  */}
       <div className='flex justify-between items-center font-medium'>
         <span className='tetx-gray-500'>User Information</span>
-        <Link href={'/'} className='text-blue-500 text-xs'>See all</Link>
+        {
+          currentUser == user.id ? (
+            <UpdateUser user={user} />
+          ) : (
+            <Link href={'/'} className='text-blue-500 text-xs'>See all</Link>
+          )
+        }
       </div>
 
       {/* Bottom  */}
@@ -107,8 +119,11 @@ const UserInfoCard = async ({ user }: { user?: User }) => {
 
         </div>
 
-        <button className='bg-blue-500 text-white p-2 text-sm rounded-md'>Follow</button>
-        <span className='text-red-400 text-xs self-end cursor-pointer'>Block User</span>
+        {
+          currentUser && currentUser != user.id && (
+            <UserInfoCardInteraction userId={user?.id!} isFollowingRequestSent={isFollowingRequestSent} isFollowing={isFollowing}  isUserBlocked={isUserBlocked} />
+          )
+        }
       </div>
     </div>
   )

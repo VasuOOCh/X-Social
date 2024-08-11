@@ -1,8 +1,28 @@
+import prisma from '@/lib/client'
+import { auth } from '@clerk/nextjs/server'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
+import FriendRequestList from './FriendRequestList'
 
-const FriendRequest = () => {
+const FriendRequest = async () => {
+
+    const { userId: currentUser } = auth()
+
+    if (!currentUser) {
+        return null;
+    }
+
+    const requests = await prisma.followRequest.findMany({
+        where: {
+            RecieverId: currentUser!
+        },
+        include: {
+            Sender: true
+        }
+    })
+
+    if (requests.length == 0) return null;
     return (
         <div className='p-4 bg-white rounded-lg text-sm shadow-md flex flex-col gap-4'>
             {/* Top  */}
@@ -12,41 +32,8 @@ const FriendRequest = () => {
             </div>
 
             {/* User  */}
-            <div className='flex justify-between'>
-                <div className='flex gap-2 items-center'>
-                    <Image src={'https://images.pexels.com/photos/2007647/pexels-photo-2007647.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'} alt='img' className='w-10 h-10 rounded-full object-cover' height={40} width={40} />
-                    <span className='font-semibold'>Harshit Verma</span>
-                </div>
+            <FriendRequestList requests={requests} />
 
-                <div className='flex gap-3 items-center'>
-                    <Image src={'/accept.png'} alt='img' className='cursor-pointer' height={20} width={20} />
-                    <Image src={'/reject.png'} alt='img' className='cursor-pointer' height={20} width={20} />
-                </div>
-            </div>
-
-            <div className='flex justify-between'>
-                <div className='flex gap-2 items-center'>
-                    <Image src={'https://images.pexels.com/photos/2007647/pexels-photo-2007647.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'} alt='img' className='w-10 h-10 rounded-full object-cover' height={40} width={40} />
-                    <span className='font-semibold'>Harshit Verma</span>
-                </div>
-
-                <div className='flex gap-3 items-center'>
-                    <Image src={'/accept.png'} alt='img' className='cursor-pointer' height={20} width={20} />
-                    <Image src={'/reject.png'} alt='img' className='cursor-pointer' height={20} width={20} />
-                </div>
-            </div>
-
-            <div className='flex justify-between'>
-                <div className='flex gap-2 items-center'>
-                    <Image src={'https://images.pexels.com/photos/2007647/pexels-photo-2007647.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'} alt='img' className='w-10 h-10 rounded-full object-cover' height={40} width={40} />
-                    <span className='font-semibold'>Harshit Verma</span>
-                </div>
-
-                <div className='flex gap-3 items-center'>
-                    <Image src={'/accept.png'} alt='img' className='cursor-pointer' height={20} width={20} />
-                    <Image src={'/reject.png'} alt='img' className='cursor-pointer' height={20} width={20} />
-                </div>
-            </div>
         </div>
     )
 }

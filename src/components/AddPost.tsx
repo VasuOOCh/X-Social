@@ -1,17 +1,20 @@
 import { addPost } from '@/lib/actions'
+import { fetchUser } from '@/lib/data'
 import { auth } from '@clerk/nextjs/server'
 import Image from 'next/image'
 import React from 'react'
 
-const AddPost = () => {
-  const {userId} = auth()
-  console.log(userId);
-  
+const AddPost = async () => {
+  const { userId } = auth();
+  const user = await fetchUser(userId!);
+  if (!user) return null;
+
+
   return (
     <div className='bg-white rounded-lg shadow-md p-4 flex gap-4 justify-between text-sm'>
 
       {/* AVATAR  */}
-      <Image alt='user' height={48} width={48} src={'https://images.pexels.com/photos/2007647/pexels-photo-2007647.jpeg?auto=compress&cs=tinysrgb&w=600'} className='w-12 h-12 object-cover rounded-full' />
+      <Image alt='user' height={48} width={48} src={user.avatar!} className='w-12 h-12 object-cover rounded-full' />
 
       {/* POST  */}
       <div className='flex-1'>
