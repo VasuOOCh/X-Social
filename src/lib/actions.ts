@@ -4,26 +4,39 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "./client";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { Ref } from "react";
 
 
-export const addPost = async (formData: FormData) => {
+export const addPost = async (desc : string, img : string,state : any) => {
     try {
+        console.log(desc,img);
+        
 
         const { userId } = auth();
         if (!userId) {
-            return
+            throw new Error("User auth required")
         }
-        const formInfo = Object.fromEntries(formData)
+
         const resp = await prisma.post.create({
             data: {
-                desc: formInfo.desc as string,
+                desc,
+                img,
                 userId: userId!
             }
         })
 
+        revalidatePath('/')
+
+        return {
+            success : "Post added"
+        }
+
+
     } catch (error) {
         console.log(error);
-
+        return {
+            error : "Error in adding post"
+        }
     }
 }
 
@@ -323,5 +336,34 @@ export const addComment = async ( postId : string, desc : string) => {
         return newComment;
     } catch (error) {
         console.log(error);
+    }
+}
+
+export const deletePost = async (postId : string, postUser : string) => {
+    try {
+
+        const { userId } = auth();    
+        
+        if (!userId) {
+            throw new Error("No user found")
+        }
+
+        if(postUser !== userId) {
+            throw new Error("Not authorized")
+        }
+
+
+        await prisma.post.delete({
+            where : {
+                id : postId
+            }
+        })
+
+        revalidatePath('/');
+        revalidatePath('/profile/' + userId);
+
+    } catch (error) {
+        console.log(error);
+        
     }
 }
